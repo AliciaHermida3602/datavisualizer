@@ -47,6 +47,10 @@ export class AppComponent implements OnInit {
   constructor(private dataService: DataService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
+    // Seleccionar por defecto el ensayo 'senoidal'
+    this.selectedEnsayoValue = 'senoidal';
+    this.selectedEnsayo.setValue('senoidal');
+
     this.loadEnsayos();
 
     // Inicializar valores por defecto
@@ -167,7 +171,22 @@ export class AppComponent implements OnInit {
 
     this.fetchDevicesData(channelsMap, ensayo, maxPoints)
       .then((responses) => {
-        const allData = responses.filter((r): r is DataResponse => r !== undefined).flatMap(r => r.data || []);
+        // Merge por timestamp: cada punto tendrá todos los canales
+        const mergedMap = new Map<string, any>();
+        responses.filter((r): r is DataResponse => r !== undefined).forEach(r => {
+          (r.data || []).forEach(point => {
+            const ts = point.timestamp;
+            if (!mergedMap.has(ts)) {
+              mergedMap.set(ts, { timestamp: ts });
+            }
+            Object.keys(point).forEach(key => {
+              if (key !== 'timestamp') {
+                mergedMap.get(ts)[key] = point[key];
+              }
+            });
+          });
+        });
+        const allData = Array.from(mergedMap.values());
         allData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         this.overviewData = allData;
         this.detailData = allData;

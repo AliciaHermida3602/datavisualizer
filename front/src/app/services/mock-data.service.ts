@@ -49,7 +49,12 @@ export class MockDataService {
                         point['hum'] = 50 + 10 * Math.cos(i * 2 * Math.PI / 100);
                     }
                     if (!channelList.length || channelList.includes('pres')) {
-                        point['pres'] = 1013 + 2 * Math.sin(i * 2 * Math.PI / 50);
+                        // Mayor amplitud para presión
+                        point['pres'] = 1013 + 20 * Math.sin(i * 2 * Math.PI / 50);
+                    }
+                    if (!channelList.length || channelList.includes('vel')) {
+                        // Mayor amplitud para velocidad
+                        point['vel'] = 50 + 30 * Math.sin(i * 2 * Math.PI / 20);
                     }
                     data.push(point);
                 }
