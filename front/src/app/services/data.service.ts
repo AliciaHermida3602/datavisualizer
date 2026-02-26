@@ -68,17 +68,20 @@ export class DataService {
       })
     );
   }
-  getData(table: string, ensayo: string, channels: string[], startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number): Observable<DataResponse> {
+  getData(ensayo: string, channels: Map<string, string[]>, startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number): Observable<DataResponse> {
+    // Extraer el device (table) del primer key del Map
+    const device = Array.from(channels.keys())[0];
+    const channelList = channels.get(device) || [];
     let params = new HttpParams()
       .set('ensayo', ensayo)
-      .set('channels', channels.join(','));
+      .set('channels', channelList.join(','));
 
     if (startTime) params = params.set('startTime', startTime);
     if (endTime) params = params.set('endTime', endTime);
     if (maxPoints) params = params.set('maxPoints', maxPoints.toString());
     if (zoomLevel) params = params.set('zoomLevel', zoomLevel.toString());
 
-    return this.http.get<DataResponse>(`${this.apiUrl}/data/${table}`, { params });
+    return this.http.get<DataResponse>(`${this.apiUrl}/data/${device}`, { params });
   }
 
   getStats(table: string, ensayo: string): Observable<DataStats> {

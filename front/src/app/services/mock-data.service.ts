@@ -32,20 +32,24 @@ export class MockDataService {
         return of(channels);
     }
 
-    getData(table: string, ensayo: string, channels: string[], startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number) {
+    getData(ensayo: string, channels: Map<string, string[]>, startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number) {
+        // Extraer device y lista de canales igual que en DataService
+        const device = Array.from(channels.keys())[0];
+        const channelList = channels.get(device) || [];
+        console.log('[MockDataService.getData] ensayo:', ensayo, ' device:', device,'channelList:', channelList);
         let data: any[] = [];
         if (ensayo === 'senoidal') {
             for (let h = 0; h < 6; h++) {
                 for (let i = 0; i < 100; i++) {
                     const date = new Date(2024, 0, 1, h, 0, i * 36);
                     const point: any = { timestamp: date.toISOString() };
-                    if (!channels || channels.includes('temp')) {
+                    if (!channelList.length || channelList.includes('temp')) {
                         point['temp'] = 20 + 5 * Math.sin(i * 2 * Math.PI / 100);
                     }
-                    if (!channels || channels.includes('hum')) {
+                    if (!channelList.length || channelList.includes('hum')) {
                         point['hum'] = 50 + 10 * Math.cos(i * 2 * Math.PI / 100);
                     }
-                    if (!channels || channels.includes('pres')) {
+                    if (!channelList.length || channelList.includes('pres')) {
                         point['pres'] = 1013 + 2 * Math.sin(i * 2 * Math.PI / 50);
                     }
                     data.push(point);
@@ -55,13 +59,13 @@ export class MockDataService {
             for (let i = 0; i < 100; i++) {
                 const date = new Date(2024, 0, 1, 0, 0, i);
                 const point: any = { timestamp: date.toISOString() };
-                if (!channels || channels.includes('temp')) {
+                if (!channelList.length || channelList.includes('temp')) {
                     point['temp'] = 20 + i * 0.1;
                 }
-                if (!channels || channels.includes('hum')) {
+                if (!channelList.length || channelList.includes('hum')) {
                     point['hum'] = 50 + i * 0.2;
                 }
-                if (!channels || channels.includes('pres')) {
+                if (!channelList.length || channelList.includes('pres')) {
                     point['pres'] = 1013 + i * 0.05;
                 }
                 data.push(point);
@@ -90,6 +94,7 @@ export class MockDataService {
                 }
             }
         };
+        console.log('[MockDataService.getData] response:', response);
         return of(response);
     }
 

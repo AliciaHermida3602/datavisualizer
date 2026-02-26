@@ -51,7 +51,7 @@ export class TimeSeriesChartComponent implements OnChanges {
   }
   @Input() overviewData: DataPoint[] = [];
   @Input() detailData: DataPoint[] = [];
-  @Input() channels: Channel[] = [];
+  @Input() channels: Map<string, Channel[]> = new Map<string, Channel[]>();
   @Input() selectedChannels: string[] = [];
   @Input() title: string = 'Time Series Chart';
 
@@ -59,6 +59,16 @@ export class TimeSeriesChartComponent implements OnChanges {
   overviewChartOption: EChartsOption = {};
 
   ngOnChanges(changes: SimpleChanges): void {
+    // LOG: Mostrar los datos recibidos
+    if (changes['overviewData']) {
+      console.log('[TimeSeriesChart] overviewData:', this.overviewData);
+    }
+    if (changes['detailData']) {
+      console.log('[TimeSeriesChart] detailData:', this.detailData);
+    }
+    if (changes['selectedChannels']) {
+      console.log('[TimeSeriesChart] selectedChannels:', this.selectedChannels);
+    }
     // Redibuja la gráfica de detalle si cambia detailData
     if (changes['detailData'] && !changes['detailData'].firstChange) {
       this.updateDetailChart();
@@ -79,11 +89,19 @@ export class TimeSeriesChartComponent implements OnChanges {
     // Agrupa canales por unidad para ejes Y dinámicos
     const unitGroups: { [unit: string]: Channel[] } = {};
     this.selectedChannels.forEach(channelName => {
-      const channel = this.channels.find(c => c.column_name === channelName);
-      if (channel) {
-        const unit = channel.unit || 'default';
+      // Buscar el canal por nombre en todas las listas de devices
+      let foundChannel: Channel | null = null;
+      for (const channelArr of Array.from(this.channels.values())) {
+        const match = channelArr.find(ch => ch.column_name === channelName);
+        if (match) {
+          foundChannel = match;
+          break;
+        }
+      }
+      if (foundChannel) {
+        const unit = foundChannel.unit || 'default';
         if (!unitGroups[unit]) unitGroups[unit] = [];
-        unitGroups[unit].push(channel);
+        unitGroups[unit].push(foundChannel);
       }
     });
     const yAxis: any[] = [];
@@ -100,12 +118,20 @@ export class TimeSeriesChartComponent implements OnChanges {
     });
     const series: any[] = [];
     this.selectedChannels.forEach((channelName, index) => {
-      const channel = this.channels.find(c => c.column_name === channelName);
-      if (!channel) return;
-      const yAxisIndex = units.indexOf(channel.unit || 'default');
+      // Buscar el canal por nombre en todas las listas de devices
+      let foundChannel: Channel | null = null;
+      for (const channelArr of Array.from(this.channels.values())) {
+        const match = channelArr.find(ch => ch.column_name === channelName);
+        if (match) {
+          foundChannel = match;
+          break;
+        }
+      }
+      if (!foundChannel) return;
+      const yAxisIndex = units.indexOf(foundChannel.unit || 'default');
       const detailSeriesData = this.detailData.map(point => [new Date(point.timestamp).getTime(), point[channelName]]);
       series.push({
-        name: channel.display_name,
+        name: foundChannel.display_name,
         type: 'line',
         data: detailSeriesData,
         yAxisIndex: yAxisIndex,
@@ -119,8 +145,16 @@ export class TimeSeriesChartComponent implements OnChanges {
       title: { text: this.title, left: 'center' },
       legend: {
         data: this.selectedChannels.map((channelName, index) => {
-          const channel = this.channels.find(c => c.column_name === channelName);
-          return channel ? channel.display_name : channelName;
+          // Buscar el canal por nombre en todas las listas de devices
+          let foundChannel: Channel | null = null;
+          for (const channelArr of Array.from(this.channels.values())) {
+            const match = channelArr.find(ch => ch.column_name === channelName);
+            if (match) {
+              foundChannel = match;
+              break;
+            }
+          }
+          return foundChannel ? foundChannel.display_name : channelName;
         }),
         top: 40,
         left: 'center',
@@ -140,64 +174,80 @@ export class TimeSeriesChartComponent implements OnChanges {
       this.overviewChartOption = {};
       return;
     }
-      // Configuración de ejes igual que la superior pero ocultos
-      const unitGroups: { [unit: string]: Channel[] } = {};
-      this.selectedChannels.forEach(channelName => {
-        const channel = this.channels.find(c => c.column_name === channelName);
-        if (channel) {
-          const unit = channel.unit || 'default';
-          if (!unitGroups[unit]) unitGroups[unit] = [];
-          unitGroups[unit].push(channel);
+    // Configuración de ejes igual que la superior pero ocultos
+    const unitGroups: { [unit: string]: Channel[] } = {};
+    this.selectedChannels.forEach(channelName => {
+      // Buscar el canal por nombre en todas las listas de devices
+      let foundChannel: Channel | null = null;
+      for (const channelArr of Array.from(this.channels.values())) {
+        const match = channelArr.find(ch => ch.column_name === channelName);
+        if (match) {
+          foundChannel = match;
+          break;
         }
+      }
+      if (foundChannel) {
+        const unit = foundChannel.unit || 'default';
+        if (!unitGroups[unit]) unitGroups[unit] = [];
+        unitGroups[unit].push(foundChannel);
+      }
+    });
+    const yAxis: any[] = [];
+    const units = Object.keys(unitGroups);
+    units.forEach((unit, index) => {
+      yAxis.push({
+        type: 'value',
+        position: index % 2 === 0 ? 'left' : 'right',
+        offset: Math.floor(index / 2) * 60,
+        axisLabel: { show: false },
+        axisLine: { show: false },
+        splitLine: { show: false }
       });
-      const yAxis: any[] = [];
-      const units = Object.keys(unitGroups);
-      units.forEach((unit, index) => {
-        yAxis.push({
-          type: 'value',
-          position: index % 2 === 0 ? 'left' : 'right',
-          offset: Math.floor(index / 2) * 60,
-          axisLabel: { show: false },
-          axisLine: { show: false },
-          splitLine: { show: false }
-        });
-      });
-      const series: any[] = [];
-      this.selectedChannels.forEach((channelName, index) => {
-        const channel = this.channels.find(c => c.column_name === channelName);
-        if (!channel) return;
-        const yAxisIndex = units.indexOf(channel.unit || 'default');
-        const overviewSeriesData = this.overviewData.map(point => [new Date(point.timestamp).getTime(), point[channelName]]);
-        series.push({
-          name: channel.display_name + ' (pano)',
-          type: 'line',
-          data: overviewSeriesData,
-          yAxisIndex: yAxisIndex,
-          symbol: 'none',
-          lineStyle: { width: 2, color: this.getColorByIndex(index) },
-          smooth: true,
-          showSymbol: false,
-          emphasis: { disabled: true },
-          tooltip: { show: false }
-        });
-      });
-      this.overviewChartOption = {
-        grid: { left: '10%', right: '10%', top: 0, height: '100%', backgroundColor: '#f5f5f5' },
-        xAxis: { type: 'time', axisLine: { show: false }, axisLabel: { show: false }, splitLine: { show: false } },
-        yAxis: yAxis,
-        series: series,
-        legend: { show: false },
-        dataZoom: [
-          {
-            type: 'slider',
-            xAxisIndex: 0,
-            start: 0,
-            end: 100,
-            bottom: 10
-          }
-        ],
+    });
+    const series: any[] = [];
+    this.selectedChannels.forEach((channelName, index) => {
+      // Buscar el canal por nombre en todas las listas de devices
+      let foundChannel: Channel | null = null;
+      for (const channelArr of Array.from(this.channels.values())) {
+        const match = channelArr.find(ch => ch.column_name === channelName);
+        if (match) {
+          foundChannel = match;
+          break;
+        }
+      }
+      if (!foundChannel) return;
+      const yAxisIndex = units.indexOf(foundChannel.unit || 'default');
+      const overviewSeriesData = this.overviewData.map(point => [new Date(point.timestamp).getTime(), point[channelName]]);
+      series.push({
+        name: foundChannel.display_name + ' (pano)',
+        type: 'line',
+        data: overviewSeriesData,
+        yAxisIndex: yAxisIndex,
+        symbol: 'none',
+        lineStyle: { width: 2, color: this.getColorByIndex(index) },
+        smooth: true,
+        showSymbol: false,
+        emphasis: { disabled: true },
         tooltip: { show: false }
-      };
+      });
+    });
+    this.overviewChartOption = {
+      grid: { left: '10%', right: '10%', top: 0, height: '100%', backgroundColor: '#f5f5f5' },
+      xAxis: { type: 'time', axisLine: { show: false }, axisLabel: { show: false }, splitLine: { show: false } },
+      yAxis: yAxis,
+      series: series,
+      legend: { show: false },
+      dataZoom: [
+        {
+          type: 'slider',
+          xAxisIndex: 0,
+          start: 0,
+          end: 100,
+          bottom: 10
+        }
+      ],
+      tooltip: { show: false }
+    };
   }
 
   onChartInit(ec: any): void {

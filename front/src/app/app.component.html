@@ -74,7 +74,7 @@
             <mat-icon>timeline</mat-icon>
             <p>Select channels to display chart</p>
           </div>
-          <!-- <app-time-series-chart
+          <app-time-series-chart
             *ngIf="!loadingData && overviewData.length > 0 && detailData.length > 0"
             [overviewData]="overviewData"
             [detailData]="detailData"
@@ -84,7 +84,7 @@
             (zoomChanged)="onZoomChanged($event)"
             (reloadOverview)="onReloadOverview()"
             style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
-          </app-time-series-chart> -->
+          </app-time-series-chart> 
         </mat-card-content>
       </mat-card>
     </div>
