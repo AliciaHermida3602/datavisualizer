@@ -1,3 +1,4 @@
+
 import { of } from 'rxjs';
 import { DataService, Ensayo, Channel, DataResponse, DataStats } from './data.service';
 
@@ -9,7 +10,19 @@ export class MockDataService {
         ];
         return of(ensayos);
     }
-
+    getAllChannels() {
+        // Simula dos tablas con diferentes canales
+        const map = new Map<string, Channel[]>();
+        map.set('Device1', [
+            { column_name: 'temp', display_name: 'Temperatura', unit: '°C' },
+            { column_name: 'hum', display_name: 'Humedad', unit: '%' }
+        ]);
+        map.set('Device2', [
+            { column_name: 'pres', display_name: 'Presión', unit: 'hPa' },
+            { column_name: 'vel', display_name: 'Velocidad', unit: 'm/s' }
+        ]);
+        return of(map);
+    }
     getChannels(table: string) {
         const channels: Channel[] = [
             { column_name: 'temp', display_name: 'Temperatura', unit: '°C' },

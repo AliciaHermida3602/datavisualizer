@@ -12,7 +12,8 @@ export class AppComponent implements OnInit {
 
   // Data
   ensayos: Ensayo[] = [];
-  channels: Channel[] = [];
+  deviceNames: string[] = [];
+  channels: Map<string, Channel[]> = new Map<string, Channel[]>();
   overviewData: DataPoint[] = [];
   detailData: DataPoint[] = [];
   stats: DataStats | null = null;
@@ -43,29 +44,23 @@ export class AppComponent implements OnInit {
   loadingChannels = false;
   loadingData = false;
 
-  constructor(private dataService: DataService, private cdr: ChangeDetectorRef) {}
+  constructor(private dataService: DataService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     this.loadEnsayos();
 
     // Inicializar valores por defecto
-    this.selectedTableValue = 'camara_valores';
-    this.selectedTable.setValue('camara_valores');
     this.selectedChannelsValue = [];
     this.selectedChannels.setValue([]);
 
     // Cargar canales de la tabla por defecto
-    this.loadChannels('camara_valores');
+    this.loadChannels();
   }
 
   // Métodos para manejar eventos de select estándar
-  onTableChange(event: any): void {
-    const table = event.target.value;
-    this.selectedTableValue = table;
-    this.selectedTable.setValue(table);
-    if (table) {
-      this.loadChannels(table);
-    }
+  onDeviceReload(event: any): void {
+    this.loadChannels();
+
   }
 
   onEnsayoChange(event: any): void {
@@ -107,16 +102,17 @@ export class AppComponent implements OnInit {
     });
   }
 
-  private loadChannels(table: string): void {
+  private loadChannels(): void {
     this.loadingChannels = true;
     this.selectedChannelsValue = [];
     this.selectedChannels.setValue([]);
-    this.channels = [];
+    this.channels = new Map<string, Channel[]>();
 
-    this.dataService.getChannels(table).subscribe({
+    this.dataService.getAllChannels().subscribe({
       next: (channels) => {
         console.log('Channels received from backend:', channels);
         this.channels = channels;
+        this.deviceNames = Array.from(channels.keys());
         this.loadingChannels = false;
       },
       error: (error) => {
@@ -219,20 +215,20 @@ export class AppComponent implements OnInit {
     return this.selectedChannelsValue || [];
   }
 
-    // Maneja el cambio de selección de un canal (checkbox)
-    onChannelCheckboxChange(columnName: string, event: any): void {
-      if (event.target.checked) {
-        // Añadir canal si no está
-        if (!this.selectedChannelsValue.includes(columnName)) {
-          this.selectedChannelsValue = [...this.selectedChannelsValue, columnName];
-        }
-      } else {
-        // Quitar canal si está
-        this.selectedChannelsValue = this.selectedChannelsValue.filter(c => c !== columnName);
+  // Maneja el cambio de selección de un canal (checkbox)
+  onChannelCheckboxChange(columnName: string, event: any): void {
+    if (event.target.checked) {
+      // Añadir canal si no está
+      if (!this.selectedChannelsValue.includes(columnName)) {
+        this.selectedChannelsValue = [...this.selectedChannelsValue, columnName];
       }
-      this.selectedChannels.setValue(this.selectedChannelsValue);
-      this.loadData();
+    } else {
+      // Quitar canal si está
+      this.selectedChannelsValue = this.selectedChannelsValue.filter(c => c !== columnName);
     }
+    this.selectedChannels.setValue(this.selectedChannelsValue);
+    this.loadData();
+  }
 
   // Recarga la panorámica con los datos originales (diezmado global)
   onReloadOverview(): void {

@@ -1,6 +1,8 @@
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface Ensayo {
   codigo_ensayo: string;
@@ -54,11 +56,23 @@ export class DataService {
     return this.http.get<Channel[]>(`${this.apiUrl}/channels/${table}`);
   }
 
+
+  getAllChannels(): Observable<Map<string, Channel[]>> {
+    return this.http.get<{ [table: string]: Channel[] }>(`${this.apiUrl}/channels/all`).pipe(
+      map(obj => {
+        const result = new Map<string, Channel[]>();
+        for (const key of Object.keys(obj)) {
+          result.set(key, obj[key]);
+        }
+        return result;
+      })
+    );
+  }
   getData(table: string, ensayo: string, channels: string[], startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number): Observable<DataResponse> {
     let params = new HttpParams()
       .set('ensayo', ensayo)
       .set('channels', channels.join(','));
-    
+
     if (startTime) params = params.set('startTime', startTime);
     if (endTime) params = params.set('endTime', endTime);
     if (maxPoints) params = params.set('maxPoints', maxPoints.toString());
