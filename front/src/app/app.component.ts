@@ -204,45 +204,61 @@ export class AppComponent implements OnInit {
   }
 
   onZoomChanged(timeRange: { start: string; end: string }): void {
-    // this.currentTimeRange = {
-    //   start: new Date(timeRange.start),
-    //   end: new Date(timeRange.end)
-    // };
-    // console.log('[ZoomChanged] Rango:', timeRange.start, timeRange.end);
-    // // Solo recarga el detalle, la panorámica permanece igual
-    // const ensayo = this.selectedEnsayo.value;
-    // const table = this.selectedTable.value;
-    // let channels = this.selectedChannels.value || [];
-    // if (Array.isArray(channels)) {
-    //   channels = channels.map(c => typeof c === 'string' ? c.replace(/[^a-zA-Z0-9_]/g, '') : c);
-    // }
-    // if (!ensayo || !table || channels.length === 0) {
-    //   this.detailData = [];
-    //   return;
-    // }
-    // this.loadingData = true;
-    // const maxPoints = 10000;
-    // this.dataService.getData(
-    //   ensayo,
-    //   channels,
-    //   timeRange.start,
-    //   timeRange.end,
-    //   maxPoints
-    // ).subscribe({
-    //   next: (detailResponse) => {
-    //     this.detailData = detailResponse.data || [];
-    //     this.dataMetadata = detailResponse.metadata ? { ...detailResponse.metadata } : null;
-    //     console.log('MetaData (zoom):', this.dataMetadata);
-    //     this.loadingData = false;
-    //     this.cdr.detectChanges();
-    //   },
-    //   error: (error) => {
-    //     console.error('Error loading detail data:', error);
-    //     this.detailData = [];
-    //     this.loadingData = false;
-    //     this.cdr.detectChanges();
-    //   }
-    // });
+    this.currentTimeRange = {
+      start: new Date(timeRange.start),
+      end: new Date(timeRange.end)
+    };
+    console.log('[ZoomChanged] Rango:', timeRange.start, timeRange.end);
+    // Recarga el detalle usando fetchDevicesData para soportar múltiples devices
+    const ensayo = this.selectedEnsayo.value;
+    let channels = this.selectedChannels.value || [];
+    const channelsMap = new Map<string, string[]>();
+    if (Array.isArray(channels)) {
+      channels.forEach(c => {
+        const cleanChannel = typeof c === 'string' ? c.replace(/[^a-zA-Z0-9_]/g, '') : c;
+        let foundDevice = null;
+        for (const device of this.deviceNames) {
+          const deviceChannels = this.channels.get(device) || [];
+          if (deviceChannels.some(ch => ch.column_name === cleanChannel)) {
+            foundDevice = device;
+            break;
+          }
+        }
+        if (foundDevice) {
+          if (!channelsMap.has(foundDevice)) {
+            channelsMap.set(foundDevice, []);
+          }
+          channelsMap.get(foundDevice)!.push(cleanChannel);
+        }
+      });
+    }
+    if (!ensayo || channels.length === 0) {
+      this.detailData = [];
+      return;
+    }
+    this.loadingData = true;
+    const maxPoints = 10000;
+    this.fetchDevicesData(channelsMap, ensayo, maxPoints)
+      .then((responses) => {
+        // Filtrar por rango de tiempo
+        let allData = responses.filter((r): r is DataResponse => r !== undefined).flatMap(r => r.data || []);
+        allData = allData.filter(dp => {
+          const ts = new Date(dp.timestamp).getTime();
+          return ts >= new Date(timeRange.start).getTime() && ts <= new Date(timeRange.end).getTime();
+        });
+        allData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        this.detailData = allData;
+        this.dataMetadata = responses.find(r => r !== undefined)?.metadata || null;
+        console.log('MetaData (zoom):', this.dataMetadata);
+        this.loadingData = false;
+        this.cdr.detectChanges();
+      })
+      .catch((error) => {
+        console.error('Error loading detail data:', error);
+        this.detailData = [];
+        this.loadingData = false;
+        this.cdr.detectChanges();
+      });
   }
 
   getSelectedChannelsList(): string[] {
