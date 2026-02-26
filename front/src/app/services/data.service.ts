@@ -68,13 +68,10 @@ export class DataService {
       })
     );
   }
-  getData(ensayo: string, channels: Map<string, string[]>, startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number): Observable<DataResponse> {
-    // Extraer el device (table) del primer key del Map
-    const device = Array.from(channels.keys())[0];
-    const channelList = channels.get(device) || [];
+  getData(device: string, ensayo: string, channels: string[], startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number): Observable<DataResponse> {
     let params = new HttpParams()
       .set('ensayo', ensayo)
-      .set('channels', channelList.join(','));
+      .set('channels', channels.join(','));
 
     if (startTime) params = params.set('startTime', startTime);
     if (endTime) params = params.set('endTime', endTime);

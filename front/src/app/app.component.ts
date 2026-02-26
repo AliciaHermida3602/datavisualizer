@@ -160,24 +160,33 @@ export class AppComponent implements OnInit {
     const maxPoints = 10000;
     // LOG: Mostrar el channelsMap construido
     console.log('[loadData] ensayo:', ensayo);
-    console.log('[loadData] channelsMap:', Array.from(channelsMap.entries()));
-    // Solo una llamada para todo el ensayo
-    this.dataService.getData(ensayo, channelsMap, undefined, undefined, maxPoints).subscribe({
-      next: (response) => {
-        this.overviewData = response.data || [];
-        this.detailData = response.data || [];
-        this.dataMetadata = response.metadata ? { ...response.metadata } : null;
-        console.log('MetaData (init):', this.dataMetadata);
-        this.loadingData = false;
-        //this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error loading data:', error);
-        this.overviewData = [];
-        this.detailData = [];
-        this.loadingData = false;
-        //this.cdr.markForCheck();
-      }
+    for (const [device, chans] of channelsMap.entries()) {
+      console.log(`[loadData] Device: ${device}, Channels:`, chans);
+    }
+
+    // Hacer una petición por cada device y combinar los datos
+    const observables = Array.from(channelsMap.entries()).map(([device, chans]) =>
+      this.dataService.getData(device, ensayo, chans, undefined, undefined, maxPoints)
+    );
+    import('rxjs').then(rxjs => {
+      rxjs.forkJoin(observables).subscribe({
+        next: (responses) => {
+          // Combinar los datos de todos los devices
+          const allData = responses.flatMap(r => r.data || []);
+          allData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          this.overviewData = allData;
+          this.detailData = allData;
+          this.dataMetadata = responses[0]?.metadata || null;
+          this.loadingData = false;
+          console.log('MetaData (init):', this.dataMetadata);
+        },
+        error: (error) => {
+          console.error('Error loading data:', error);
+          this.overviewData = [];
+          this.detailData = [];
+          this.loadingData = false;
+        }
+      });
     });
   }
 

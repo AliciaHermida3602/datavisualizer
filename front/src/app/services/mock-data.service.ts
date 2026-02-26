@@ -32,11 +32,10 @@ export class MockDataService {
         return of(channels);
     }
 
-    getData(ensayo: string, channels: Map<string, string[]>, startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number) {
+    getData(device: string, ensayo: string, channels: string[], startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number) {
         // Extraer device y lista de canales igual que en DataService
-        const device = Array.from(channels.keys())[0];
-        const channelList = channels.get(device) || [];
-        console.log('[MockDataService.getData] ensayo:', ensayo, ' device:', device,'channelList:', channelList);
+        const channelList = channels || [];
+        console.log('[MockDataService.getData] ensayo:', ensayo, ' device:', device, 'channelList:', channelList);
         let data: any[] = [];
         if (ensayo === 'senoidal') {
             for (let h = 0; h < 6; h++) {
