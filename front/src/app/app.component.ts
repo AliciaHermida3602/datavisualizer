@@ -8,6 +8,28 @@ import { DataService, Ensayo, Channel, DataPoint, DataStats, DataResponse } from
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
+  /**
+   * Combina arrays de DataResponse para que cada punto tenga todos los canales por timestamp.
+   */
+  private mergeDataResponses(responses: DataResponse[]): any[] {
+    const mergedMap = new Map<string, any>();
+    responses.filter((r): r is DataResponse => r !== undefined).forEach(r => {
+      (r.data || []).forEach(point => {
+        const ts = point.timestamp;
+        if (!mergedMap.has(ts)) {
+          mergedMap.set(ts, { timestamp: ts });
+        }
+        Object.keys(point).forEach(key => {
+          if (key !== 'timestamp') {
+            mergedMap.get(ts)[key] = point[key];
+          }
+        });
+      });
+    });
+    const allData = Array.from(mergedMap.values());
+    allData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    return allData;
+  }
   title = 'Industrial Data Visualization';
 
   // Data
@@ -171,23 +193,7 @@ export class AppComponent implements OnInit {
 
     this.fetchDevicesData(channelsMap, ensayo, maxPoints)
       .then((responses) => {
-        // Merge por timestamp: cada punto tendrá todos los canales
-        const mergedMap = new Map<string, any>();
-        responses.filter((r): r is DataResponse => r !== undefined).forEach(r => {
-          (r.data || []).forEach(point => {
-            const ts = point.timestamp;
-            if (!mergedMap.has(ts)) {
-              mergedMap.set(ts, { timestamp: ts });
-            }
-            Object.keys(point).forEach(key => {
-              if (key !== 'timestamp') {
-                mergedMap.get(ts)[key] = point[key];
-              }
-            });
-          });
-        });
-        const allData = Array.from(mergedMap.values());
-        allData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        const allData = this.mergeDataResponses(responses);
         this.overviewData = allData;
         this.detailData = allData;
         this.dataMetadata = responses.find(r => r !== undefined)?.metadata || null;
@@ -259,13 +265,12 @@ export class AppComponent implements OnInit {
     const maxPoints = 10000;
     this.fetchDevicesData(channelsMap, ensayo, maxPoints)
       .then((responses) => {
-        // Filtrar por rango de tiempo
-        let allData = responses.filter((r): r is DataResponse => r !== undefined).flatMap(r => r.data || []);
+        // Merge por timestamp y filtrar por rango de tiempo
+        let allData = this.mergeDataResponses(responses);
         allData = allData.filter(dp => {
           const ts = new Date(dp.timestamp).getTime();
           return ts >= new Date(timeRange.start).getTime() && ts <= new Date(timeRange.end).getTime();
         });
-        allData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         this.detailData = allData;
         this.dataMetadata = responses.find(r => r !== undefined)?.metadata || null;
         console.log('MetaData (zoom):', this.dataMetadata);
