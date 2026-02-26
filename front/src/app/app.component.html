@@ -1,5 +1,5 @@
 
-<mat-toolbar color="primary">
+<mat-toolbar class="title-bar">
   <span>{{ title }}</span>
   <span class="spacer"></span>
   <button mat-icon-button (click)="onRefreshData()" [disabled]="loadingData">
@@ -21,11 +21,14 @@
       </select>
       <div class="spinner" *ngIf="loading">Loading...</div>
     </div>
-    <div class="action-buttons">
-      <button mat-raised-button color="accent" (click)="onClearSelection()">
-        Clear Selection
-      </button>
-    </div>
+
+    <button mat-raised-button class="clear-btn"
+      (click)="onClearSelection()"
+      [ngClass]="{'selected': selectedChannelsValue.length > 0}">
+      <mat-icon>clear</mat-icon>
+      <span>Clear Selection</span>
+    </button>
+
   </div>
 
   <!-- Middle: Left channels, right chart -->
@@ -86,7 +89,7 @@
             (zoomChanged)="onZoomChanged($event)"
             (reloadOverview)="onReloadOverview()"
             style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
-          </app-time-series-chart> 
+          </app-time-series-chart>
         </mat-card-content>
       </mat-card>
     </div>
