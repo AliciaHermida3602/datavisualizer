@@ -17,9 +17,13 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { TimeSeriesChartComponent } from './components/time-series-chart/time-series-chart.component';
+import { DataService } from './services/data.service';
+import { MockDataService } from './services/mock-data.service';
+import { environment } from '../environments/environment';
 
 @NgModule({
   declarations: [
@@ -45,10 +49,15 @@ import { TimeSeriesChartComponent } from './components/time-series-chart/time-se
     MatInputModule,
     MatDatepickerModule,
     MatNativeDateModule,
-  MatIconModule,
-  MatTooltipModule
+    MatIconModule,
+    MatTooltipModule
   ],
-  providers: [],
+  providers: [
+    {
+      provide: DataService,
+      useClass: environment.useMock ? MockDataService : DataService
+    }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
