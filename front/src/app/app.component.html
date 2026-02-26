@@ -31,10 +31,10 @@
   <!-- Middle: Left channels, right chart -->
   <div class="middle-row">
     <div class="channels-panel">
-      <label>Devices y Canales</label>
+      <h3>Equipos disponibles</h3>
       <div *ngIf="deviceNames.length > 0">
         <div *ngFor="let device of deviceNames">
-          <div class="device-title"><strong>{{ device }}</strong></div>
+          <div class="device-title">{{ device }}</div>
           <div class="channels-checkbox-list"
             *ngIf="(channels.get(device)?.length ?? 0) > 0">
             <div *ngFor="let channel of channels.get(device)">

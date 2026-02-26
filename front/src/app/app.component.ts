@@ -164,30 +164,34 @@ export class AppComponent implements OnInit {
       console.log(`[loadData] Device: ${device}, Channels:`, chans);
     }
 
-    // Hacer una petición por cada device y combinar los datos
-    const observables = Array.from(channelsMap.entries()).map(([device, chans]) =>
-      this.dataService.getData(device, ensayo, chans, undefined, undefined, maxPoints)
-    );
-    import('rxjs').then(rxjs => {
-      rxjs.forkJoin(observables).subscribe({
-        next: (responses) => {
-          // Combinar los datos de todos los devices
-          const allData = responses.flatMap(r => r.data || []);
-          allData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-          this.overviewData = allData;
-          this.detailData = allData;
-          this.dataMetadata = responses[0]?.metadata || null;
-          this.loadingData = false;
-          console.log('MetaData (init):', this.dataMetadata);
-        },
-        error: (error) => {
-          console.error('Error loading data:', error);
-          this.overviewData = [];
-          this.detailData = [];
-          this.loadingData = false;
-        }
+
+    this.fetchDevicesData(channelsMap, ensayo, maxPoints)
+      .then((responses) => {
+        const allData = responses.filter((r): r is DataResponse => r !== undefined).flatMap(r => r.data || []);
+        allData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        this.overviewData = allData;
+        this.detailData = allData;
+        this.dataMetadata = responses.find(r => r !== undefined)?.metadata || null;
+        this.loadingData = false;
+        console.log('MetaData (init):', this.dataMetadata);
+      })
+      .catch((error) => {
+        console.error('Error loading data:', error);
+        this.overviewData = [];
+        this.detailData = [];
+        this.loadingData = false;
       });
-    });
+  }
+
+
+  private async fetchDevicesData(channelsMap: Map<string, string[]>, ensayo: string, maxPoints: number): Promise<DataResponse[]> {
+    // Hacer una petición por cada device y combinar los datos usando Promise.all
+    const promises = Array.from(channelsMap.entries()).map(([device, chans]) =>
+      this.dataService.getData(device, ensayo, chans, undefined, undefined, maxPoints).toPromise()
+    );
+    const results = await Promise.all(promises);
+    // Filtrar cualquier undefined por seguridad
+    return results.filter((r): r is DataResponse => r !== undefined);
   }
 
   onRefreshData(): void {
@@ -262,31 +266,31 @@ export class AppComponent implements OnInit {
 
   // Recarga la panorámica con los datos originales (diezmado global)
   onReloadOverview(): void {
-    // const ensayo = this.selectedEnsayo.value;
-    // const table = this.selectedTable.value;
-    // let channels = this.selectedChannels.value || [];
-    // if (Array.isArray(channels)) {
-    //   channels = channels.map(c => typeof c === 'string' ? c.replace(/[^a-zA-Z0-9_]/g, '') : c);
-    // }
-    // if (!ensayo || !table || channels.length === 0) {
-    //   this.overviewData = [];
-    //   return;
-    // }
-    // this.loadingData = true;
-    // const maxPoints = 10000;
-    // // Llama solo para la panorámica (rango completo)
-    // this.dataService.getData(table, ensayo, channels, undefined, undefined, maxPoints).subscribe({
-    //   next: (response) => {
-    //     this.overviewData = response.data || [];
-    //     this.dataMetadata = response.metadata ? { ...response.metadata } : null;
-    //     this.loadingData = false;
-    //     this.cdr.detectChanges();
-    //   },
-    //   error: (error) => {
-    //     console.error('Error loading overview data:', error);
-    //     this.overviewData = [];
-    //     this.loadingData = false;
-    //   }
-    // });
+    const ensayo = this.selectedEnsayo.value;
+    const table = this.selectedTable.value;
+    let channels = this.selectedChannels.value || [];
+    if (Array.isArray(channels)) {
+      channels = channels.map(c => typeof c === 'string' ? c.replace(/[^a-zA-Z0-9_]/g, '') : c);
+    }
+    if (!ensayo || !table || channels.length === 0) {
+      this.overviewData = [];
+      return;
+    }
+    this.loadingData = true;
+    const maxPoints = 10000;
+    // Llama solo para la panorámica (rango completo)
+    this.dataService.getData(table, ensayo, channels, undefined, undefined, maxPoints).subscribe({
+      next: (response) => {
+        this.overviewData = response.data || [];
+        this.dataMetadata = response.metadata ? { ...response.metadata } : null;
+        this.loadingData = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading overview data:', error);
+        this.overviewData = [];
+        this.loadingData = false;
+      }
+    });
   }
 }

@@ -1,7 +1,42 @@
+// Device title
+.device-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a0e87;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+// Lista de canales
+.channels-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.channels-checkbox-list label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.channels-checkbox-list input[type="checkbox"] {
+  accent-color: #1976d2;
+  margin-right: 6px;
+}
+
+.channels-panel h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 10px;
+}
 .spacer {
   flex: 1;
 }
-
 
 .container.restructured-layout {
   padding: 16px;
@@ -34,7 +69,7 @@
   background: #fafafa;
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   overflow-y: auto;
   flex-shrink: 0;
   height: 100%;
@@ -161,7 +196,8 @@
   font-size: 13px;
 }
 
-.stat-item, .sampling-item {
+.stat-item,
+.sampling-item {
   font-size: 14px;
 }
 
@@ -193,7 +229,8 @@
   gap: 16px;
 }
 
-.no-data, .no-selection {
+.no-data,
+.no-selection {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -204,15 +241,16 @@
   color: #666;
 }
 
-.no-data mat-icon, .no-selection mat-icon {
+.no-data mat-icon,
+.no-selection mat-icon {
   font-size: 48px;
   width: 48px;
   height: 48px;
 }
 
-
 @media (max-width: 900px) {
-  .top-row, .middle-row {
+  .top-row,
+  .middle-row {
     flex-direction: column;
     gap: 12px;
   }
