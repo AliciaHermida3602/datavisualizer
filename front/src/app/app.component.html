@@ -1,0 +1,119 @@
+
+<mat-toolbar color="primary">
+  <span>{{ title }}</span>
+  <span class="spacer"></span>
+  <button mat-icon-button (click)="onRefreshData()" [disabled]="loadingData">
+    <mat-icon>refresh</mat-icon>
+  </button>
+</mat-toolbar>
+
+<div class="container restructured-layout">
+  <!-- Top: Table and Ensayo Selection -->
+  <div class="top-row">
+    <div class="form-field">
+      <label>Table</label>
+      <select class="form-select" [(ngModel)]="selectedTableValue" (change)="onTableChange($event)">
+        <option value="">Select a table</option>
+        <option *ngFor="let table of availableTables" [value]="table.value">
+          {{ table.label }}
+        </option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Ensayo</label>
+      <select class="form-select" [(ngModel)]="selectedEnsayoValue" [disabled]="loading" (change)="onEnsayoChange($event)">
+        <option value="">Select an ensayo</option>
+        <option *ngFor="let ensayo of ensayos" [value]="ensayo.codigo_ensayo">
+          {{ ensayo.codigo_ensayo }} - {{ ensayo.descripcion }}
+        </option>
+      </select>
+      <div class="spinner" *ngIf="loading">Loading...</div>
+    </div>
+    <div class="action-buttons">
+      <button mat-raised-button color="accent" (click)="onClearSelection()">
+        Clear Selection
+      </button>
+    </div>
+  </div>
+
+  <!-- Middle: Left channels, right chart -->
+  <div class="middle-row">
+    <div class="channels-panel">
+      <label>Channels</label>
+      <div class="channels-checkbox-list" *ngIf="channels.length > 0">
+        <div *ngFor="let channel of channels">
+          <label>
+            <input type="checkbox"
+              [value]="channel.column_name"
+              [checked]="selectedChannelsValue.includes(channel.column_name)"
+              (change)="onChannelCheckboxChange(channel.column_name, $event)"
+              [disabled]="loadingChannels" />
+            {{ channel.display_name }} ({{ channel.unit }})
+          </label>
+        </div>
+      </div>
+      <div class="spinner" *ngIf="loadingChannels">Loading channels...</div>
+    </div>
+    <div class="chart-panel">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Time Series Chart</mat-card-title>
+          <mat-card-subtitle *ngIf="selectedEnsayoValue">
+            Ensayo: {{ selectedEnsayoValue }}
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="loadingData" class="loading-container">
+            <mat-spinner></mat-spinner>
+            <p>Loading chart data...</p>
+          </div>
+          <div *ngIf="!loadingData && detailData.length === 0 && getSelectedChannelsList().length > 0" class="no-data">
+            <mat-icon>info</mat-icon>
+            <p>No data available for selected parameters</p>
+          </div>
+          <div *ngIf="!loadingData && getSelectedChannelsList().length === 0" class="no-selection">
+            <mat-icon>timeline</mat-icon>
+            <p>Select channels to display chart</p>
+          </div>
+          <app-time-series-chart
+            *ngIf="!loadingData && overviewData.length > 0 && detailData.length > 0"
+            [overviewData]="overviewData"
+            [detailData]="detailData"
+            [channels]="channels"
+            [selectedChannels]="getSelectedChannelsList()"
+            [title]="'Ensayo: ' + selectedEnsayoValue"
+            (zoomChanged)="onZoomChanged($event)"
+            (reloadOverview)="onReloadOverview()"
+            style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
+          </app-time-series-chart>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Bottom: Info banners -->
+  <div class="bottom-row">
+    <div class="stats-row" *ngIf="stats">
+      <div class="stat-item">
+        <strong>Records:</strong> {{ stats.total_records | number }}
+      </div>
+      <div class="stat-item">
+        <strong>Duration:</strong> {{ stats.duration_hours | number:'1.2-2' }} hours
+      </div>
+      <div class="stat-item">
+        <strong>Period:</strong> {{ stats.start_time | date:'short' }} - {{ stats.end_time | date:'short' }}
+      </div>
+    </div>
+    <div class="sampling-info" *ngIf="dataMetadata">
+      <div class="sampling-item">
+        <strong>Displayed Points:</strong> {{ dataMetadata.returnedPoints | number }} / {{ dataMetadata.totalPoints | number }}
+      </div>
+      <div class="sampling-item" *ngIf="dataMetadata.samplingRate > 1">
+        <strong>Sampling Rate:</strong> 1 every {{ dataMetadata.samplingRate }} points
+      </div>
+      <div class="sampling-item" *ngIf="currentTimeRange.start && currentTimeRange.end">
+        <strong>Time Range:</strong> {{ currentTimeRange.start | date:'short' }} - {{ currentTimeRange.end | date:'short' }}
+      </div>
+    </div>
+  </div>
+</div>

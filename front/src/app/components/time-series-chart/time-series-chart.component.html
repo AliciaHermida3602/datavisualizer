@@ -1,0 +1,24 @@
+<div class="chart-container">
+  <div
+    echarts
+    [options]="detailChartOption"
+    class="chart detail-chart"
+    >
+  </div>
+  <div class="overview-chart-wrapper">
+    <div
+      echarts
+      [options]="overviewChartOption"
+      class="chart overview-chart"
+      (chartInit)="onChartInit($event)">
+    </div>
+    <div class="overview-controls">
+      <button mat-icon-button color="primary" matTooltip="Copiar detalle en panorámica" (click)="copyDetailToOverview()">
+        <mat-icon>compare_arrows</mat-icon>
+      </button>
+      <button mat-icon-button color="accent" matTooltip="Restablecer panorámica" (click)="resetOverview()">
+        <mat-icon>restore</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

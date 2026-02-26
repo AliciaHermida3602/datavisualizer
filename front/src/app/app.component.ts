@@ -1,0 +1,266 @@
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { DataService, Ensayo, Channel, DataPoint, DataStats, DataResponse } from './services/data.service';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss']
+})
+export class AppComponent implements OnInit {
+  title = 'Industrial Data Visualization';
+
+  // Data
+  ensayos: Ensayo[] = [];
+  channels: Channel[] = [];
+  overviewData: DataPoint[] = [];
+  detailData: DataPoint[] = [];
+  stats: DataStats | null = null;
+  dataMetadata: any = null;
+
+  // Time range for zoom functionality
+  currentTimeRange: { start?: Date; end?: Date } = {};
+
+  // Form controls
+  selectedEnsayo = new FormControl('');
+  selectedTable = new FormControl('');
+  selectedChannels = new FormControl<string[]>([]);
+
+  // Variables para ngModel
+  selectedTableValue = '';
+  selectedEnsayoValue = '';
+  selectedChannelsValue: string[] = [];
+
+  // Available tables
+  availableTables = [
+    { value: 'fuente_valores', label: 'Fuente de Alimentación' },
+    { value: 'camara_valores', label: 'Cámara Climática' },
+    { value: 'motor_valores', label: 'Motor Inteligente' }
+  ];
+
+  // Loading states
+  loading = false;
+  loadingChannels = false;
+  loadingData = false;
+
+  constructor(private dataService: DataService, private cdr: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
+    this.loadEnsayos();
+
+    // Inicializar valores por defecto
+    this.selectedTableValue = 'camara_valores';
+    this.selectedTable.setValue('camara_valores');
+    this.selectedChannelsValue = [];
+    this.selectedChannels.setValue([]);
+
+    // Cargar canales de la tabla por defecto
+    this.loadChannels('camara_valores');
+  }
+
+  // Métodos para manejar eventos de select estándar
+  onTableChange(event: any): void {
+    const table = event.target.value;
+    this.selectedTableValue = table;
+    this.selectedTable.setValue(table);
+    if (table) {
+      this.loadChannels(table);
+    }
+  }
+
+  onEnsayoChange(event: any): void {
+    const ensayo = event.target.value;
+    this.selectedEnsayoValue = ensayo;
+    this.selectedEnsayo.setValue(ensayo);
+    this.loadData();
+  }
+
+  onChannelsChange(event: any): void {
+    // Extract only the pure column_name from each selected option
+    const selectedOptions = Array.from(event.target.selectedOptions).map((option: any) => {
+      // If value is like "1: 'temperatura_actual'", extract only the part inside quotes
+      const match = option.value.match(/'([^']+)'/);
+      if (match) {
+        return match[1];
+      }
+      // If value is already pure, use as is
+      return option.value;
+    });
+    this.selectedChannelsValue = selectedOptions;
+    this.selectedChannels.setValue(selectedOptions);
+    this.loadData();
+  }
+
+  private loadEnsayos(): void {
+    console.log('Loading ensayos...');
+    this.loading = true;
+    this.dataService.getEnsayos().subscribe({
+      next: (ensayos) => {
+        console.log('Ensayos loaded:', ensayos);
+        this.ensayos = ensayos;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading ensayos:', error);
+        this.loading = false;
+      }
+    });
+  }
+
+  private loadChannels(table: string): void {
+    this.loadingChannels = true;
+    this.selectedChannelsValue = [];
+    this.selectedChannels.setValue([]);
+    this.channels = [];
+
+    this.dataService.getChannels(table).subscribe({
+      next: (channels) => {
+        console.log('Channels received from backend:', channels);
+        this.channels = channels;
+        this.loadingChannels = false;
+      },
+      error: (error) => {
+        console.error('Error loading channels:', error);
+        this.loadingChannels = false;
+      }
+    });
+  }
+
+  // Carga inicial: panorámica y detalle
+  private loadData(): void {
+    const ensayo = this.selectedEnsayo.value;
+    const table = this.selectedTable.value;
+    let channels = this.selectedChannels.value || [];
+    if (Array.isArray(channels)) {
+      channels = channels.map(c => typeof c === 'string' ? c.replace(/[^a-zA-Z0-9_]/g, '') : c);
+    }
+    if (!ensayo || !table || channels.length === 0) {
+      this.overviewData = [];
+      this.detailData = [];
+      this.stats = null;
+      this.dataMetadata = null;
+      return;
+    }
+    this.loadingData = true;
+    const maxPoints = 10000;
+    // Solo una llamada para todo el ensayo
+    this.dataService.getData(table, ensayo, channels, undefined, undefined, maxPoints).subscribe({
+      next: (response) => {
+        this.overviewData = response.data || [];
+        this.detailData = response.data || [];
+        this.dataMetadata = response.metadata ? { ...response.metadata } : null;
+        console.log('MetaData (init):', this.dataMetadata);
+        this.loadingData = false;
+        //this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error('Error loading data:', error);
+        this.overviewData = [];
+        this.detailData = [];
+        this.loadingData = false;
+        //this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onRefreshData(): void {
+    this.loadData();
+  }
+
+  onClearSelection(): void {
+    this.selectedChannelsValue = [];
+    this.selectedChannels.setValue([]);
+  }
+
+  onZoomChanged(timeRange: { start: string; end: string }): void {
+    this.currentTimeRange = {
+      start: new Date(timeRange.start),
+      end: new Date(timeRange.end)
+    };
+    console.log('[ZoomChanged] Rango:', timeRange.start, timeRange.end);
+    // Solo recarga el detalle, la panorámica permanece igual
+    const ensayo = this.selectedEnsayo.value;
+    const table = this.selectedTable.value;
+    let channels = this.selectedChannels.value || [];
+    if (Array.isArray(channels)) {
+      channels = channels.map(c => typeof c === 'string' ? c.replace(/[^a-zA-Z0-9_]/g, '') : c);
+    }
+    if (!ensayo || !table || channels.length === 0) {
+      this.detailData = [];
+      return;
+    }
+    this.loadingData = true;
+    const maxPoints = 10000;
+    this.dataService.getData(
+      table,
+      ensayo,
+      channels,
+      timeRange.start,
+      timeRange.end,
+      maxPoints
+    ).subscribe({
+      next: (detailResponse) => {
+        this.detailData = detailResponse.data || [];
+        this.dataMetadata = detailResponse.metadata ? { ...detailResponse.metadata } : null;
+        console.log('MetaData (zoom):', this.dataMetadata);
+        this.loadingData = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading detail data:', error);
+        this.detailData = [];
+        this.loadingData = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  getSelectedChannelsList(): string[] {
+    return this.selectedChannelsValue || [];
+  }
+
+    // Maneja el cambio de selección de un canal (checkbox)
+    onChannelCheckboxChange(columnName: string, event: any): void {
+      if (event.target.checked) {
+        // Añadir canal si no está
+        if (!this.selectedChannelsValue.includes(columnName)) {
+          this.selectedChannelsValue = [...this.selectedChannelsValue, columnName];
+        }
+      } else {
+        // Quitar canal si está
+        this.selectedChannelsValue = this.selectedChannelsValue.filter(c => c !== columnName);
+      }
+      this.selectedChannels.setValue(this.selectedChannelsValue);
+      this.loadData();
+    }
+
+  // Recarga la panorámica con los datos originales (diezmado global)
+  onReloadOverview(): void {
+    const ensayo = this.selectedEnsayo.value;
+    const table = this.selectedTable.value;
+    let channels = this.selectedChannels.value || [];
+    if (Array.isArray(channels)) {
+      channels = channels.map(c => typeof c === 'string' ? c.replace(/[^a-zA-Z0-9_]/g, '') : c);
+    }
+    if (!ensayo || !table || channels.length === 0) {
+      this.overviewData = [];
+      return;
+    }
+    this.loadingData = true;
+    const maxPoints = 10000;
+    // Llama solo para la panorámica (rango completo)
+    this.dataService.getData(table, ensayo, channels, undefined, undefined, maxPoints).subscribe({
+      next: (response) => {
+        this.overviewData = response.data || [];
+        this.dataMetadata = response.metadata ? { ...response.metadata } : null;
+        this.loadingData = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading overview data:', error);
+        this.overviewData = [];
+        this.loadingData = false;
+      }
+    });
+  }
+}
