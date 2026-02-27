@@ -87,10 +87,10 @@
   color: #333;
   margin-bottom: 4px;
 }
-.channels-panel-bottom {
-  margin-top: auto;
+.channels-panel-top {
   display: flex;
-  justify-content: right;
+  flex-direction: row;
+  align-items: center;
 }
 .device-title {
   font-size: 16px;
@@ -294,6 +294,6 @@
     padding: 8px;
   }
 }
-.logo{
+.logo {
   height: 100px;
 }

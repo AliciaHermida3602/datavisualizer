@@ -56,7 +56,6 @@ export class DataService {
     return this.http.get<Channel[]>(`${this.apiUrl}/channels/${table}`);
   }
 
-
   getAllChannels(): Observable<Map<string, Channel[]>> {
     return this.http.get<{ [table: string]: Channel[] }>(`${this.apiUrl}/channels/all`).pipe(
       map(obj => {

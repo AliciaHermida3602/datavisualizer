@@ -21,15 +21,11 @@ export class MockDataService {
             { column_name: 'pres', display_name: 'Presión', unit: 'hPa' },
             { column_name: 'vel', display_name: 'Velocidad', unit: 'm/s' }
         ]);
-        return of(map);
-    }
-    getChannels(table: string) {
-        const channels: Channel[] = [
+        map.set('Device3', [
             { column_name: 'temp', display_name: 'Temperatura', unit: '°C' },
-            { column_name: 'hum', display_name: 'Humedad', unit: '%' },
-            { column_name: 'pres', display_name: 'Presión', unit: 'hPa' }
-        ];
-        return of(channels);
+            { column_name: 'hum', display_name: 'Humedad', unit: '%' }
+        ]);
+        return of(map);
     }
 
     getData(device: string, ensayo: string, channels: string[], startTime?: string, endTime?: string, maxPoints?: number, zoomLevel?: number) {
@@ -43,18 +39,22 @@ export class MockDataService {
                     const date = new Date(2024, 0, 1, h, 0, i * 36);
                     const point: any = { timestamp: date.toISOString() };
                     if (!channelList.length || channelList.includes('temp')) {
-                        point['temp'] = 20 + 5 * Math.sin(i * 2 * Math.PI / 100);
+                        const key = `${device}:temp`;
+                        if (device.includes('1')) {
+                            point[key] = 20 + 5 * Math.sin(i * 2 * Math.PI / 100);
+                        } else { point[key] = 200 + 5 * Math.sin(i * 2 * Math.PI / 100); }
                     }
                     if (!channelList.length || channelList.includes('hum')) {
-                        point['hum'] = 50 + 10 * Math.cos(i * 2 * Math.PI / 100);
+                        const key = `${device}:hum`;
+                        point[key] = 50 + 10 * Math.cos(i * 2 * Math.PI / 100);
                     }
                     if (!channelList.length || channelList.includes('pres')) {
-                        // Mayor amplitud para presión
-                        point['pres'] = 1013 + 20 * Math.sin(i * 2 * Math.PI / 50);
+                        const key = `${device}:pres`;
+                        point[key] = 1013 + 20 * Math.sin(i * 2 * Math.PI / 50);
                     }
                     if (!channelList.length || channelList.includes('vel')) {
-                        // Mayor amplitud para velocidad
-                        point['vel'] = 50 + 30 * Math.sin(i * 2 * Math.PI / 20);
+                        const key = `${device}:vel`;
+                        point[key] = 50 + 30 * Math.sin(i * 2 * Math.PI / 20);
                     }
                     data.push(point);
                 }
@@ -64,13 +64,16 @@ export class MockDataService {
                 const date = new Date(2024, 0, 1, 0, 0, i);
                 const point: any = { timestamp: date.toISOString() };
                 if (!channelList.length || channelList.includes('temp')) {
-                    point['temp'] = 20 + i * 0.1;
+                    const key = `${device}:temp`;
+                    point[key] = 20 + i * 0.1;
                 }
                 if (!channelList.length || channelList.includes('hum')) {
-                    point['hum'] = 50 + i * 0.2;
+                    const key = `${device}:hum`;
+                    point[key] = 50 + i * 0.2;
                 }
                 if (!channelList.length || channelList.includes('pres')) {
-                    point['pres'] = 1013 + i * 0.05;
+                    const key = `${device}:pres`;
+                    point[key] = 1013 + i * 0.05;
                 }
                 data.push(point);
             }

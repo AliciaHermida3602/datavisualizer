@@ -150,64 +150,64 @@ export class AppComponent implements OnInit {
 
   // Carga inicial: panorámica y detalle
   private loadData(): void {
+    console.log('[loadData] selectedChannelsValue:', this.selectedChannelsValue);
+
     const ensayo = this.selectedEnsayo.value;
     let channels = this.selectedChannels.value || [];
+
+    console.log('[loadData] channels (raw):', channels);
     const channelsMap = new Map<string, string[]>();
+    console.log('[loadData] channelsMap before:', channelsMap);
+
     if (Array.isArray(channels)) {
-      // Agrupar los canales seleccionados por device
-      channels.forEach(c => {
-        const cleanChannel = typeof c === 'string' ? c.replace(/[^a-zA-Z0-9_]/g, '') : c;
-        // Buscar a qué device pertenece este canal
-        let foundDevice = null;
-        for (const device of this.deviceNames) {
-          const deviceChannels = this.channels.get(device) || [];
-          if (deviceChannels.some(ch => ch.column_name === cleanChannel)) {
-            foundDevice = device;
-            break;
-          }
+      channels.forEach((c: string) => {
+        const [device, columnName] = c.split(":");
+        if (!channelsMap.has(device)) {
+          channelsMap.set(device, []);
         }
-        if (foundDevice) {
-          if (!channelsMap.has(foundDevice)) {
-            channelsMap.set(foundDevice, []);
-          }
-          channelsMap.get(foundDevice)!.push(cleanChannel);
-        }
+        channelsMap.get(device)!.push(columnName);
+        console.log('[loadData] device:', device, 'columnName:', columnName);
+
       });
-    }
-    if (!ensayo || channels.length === 0) {
-      this.overviewData = [];
-      this.detailData = [];
-      this.stats = null;
-      this.dataMetadata = null;
-      console.log('[loadData] Sin ensayo o canales seleccionados.');
-      return;
-    }
-    this.loadingData = true;
-    const maxPoints = 10000;
-    // LOG: Mostrar el channelsMap construido
-    console.log('[loadData] ensayo:', ensayo);
-    for (const [device, chans] of channelsMap.entries()) {
-      console.log(`[loadData] Device: ${device}, Channels:`, chans);
-    }
+      console.log('[loadData] channelsMap after:', Array.from(channelsMap.entries()));
 
-
-    this.fetchDevicesData(channelsMap, ensayo, maxPoints)
-      .then((responses) => {
-        const allData = this.mergeDataResponses(responses);
-        this.overviewData = allData;
-        this.detailData = allData;
-        this.dataMetadata = responses.find(r => r !== undefined)?.metadata || null;
-        this.loadingData = false;
-        console.log('MetaData (init):', this.dataMetadata);
-      })
-      .catch((error) => {
-        console.error('Error loading data:', error);
+      if (!ensayo || channels.length === 0) {
         this.overviewData = [];
         this.detailData = [];
-        this.loadingData = false;
-      });
-  }
+        this.stats = null;
+        this.dataMetadata = null;
+        console.log('[loadData] Sin ensayo o canales seleccionados.');
+        return;
+      }
+      this.loadingData = true;
+      const maxPoints = 10000;
+      // LOG: Mostrar el channelsMap construido
+      console.log('[loadData] ensayo:', ensayo);
+      for (const [device, chans] of channelsMap.entries()) {
+        console.log(`[loadData] Device: ${device}, Channels:`, chans);
+      }
 
+
+      this.fetchDevicesData(channelsMap, ensayo, maxPoints)
+        .then((responses) => {
+          console.log('[loadData] responses:', responses);
+
+          const allData = this.mergeDataResponses(responses);
+          console.log('[loadData] mergeddata:', allData);
+          this.overviewData = allData;
+          this.detailData = allData;
+          this.dataMetadata = responses.find(r => r !== undefined)?.metadata || null;
+          this.loadingData = false;
+          console.log('MetaData (init):', this.dataMetadata);
+        })
+        .catch((error) => {
+          console.error('Error loading data:', error);
+          this.overviewData = [];
+          this.detailData = [];
+          this.loadingData = false;
+        });
+    }
+  }
 
   private async fetchDevicesData(channelsMap: Map<string, string[]>, ensayo: string, maxPoints: number): Promise<DataResponse[]> {
     // Hacer una petición por cada device y combinar los datos usando Promise.all
@@ -290,17 +290,19 @@ export class AppComponent implements OnInit {
   }
 
   // Maneja el cambio de selección de un canal (checkbox)
-  onChannelCheckboxChange(columnName: string, event: any): void {
+  onChannelCheckboxChange(device: string, columnName: string, event: any): void {
+    console.log('[onChannelCheckboxChange] device:', device, 'columnName:', columnName, 'checked:', event.target.checked);
+    console.log('[onChannelCheckboxChange] selectedChannelsValue before:', this.selectedChannelsValue);
+    const deviceChannelKey = `${device}:${columnName}`;
     if (event.target.checked) {
-      // Añadir canal si no está
-      if (!this.selectedChannelsValue.includes(columnName)) {
-        this.selectedChannelsValue = [...this.selectedChannelsValue, columnName];
+      if (!this.selectedChannelsValue.includes(deviceChannelKey)) {
+        this.selectedChannelsValue = [...this.selectedChannelsValue, deviceChannelKey];
       }
     } else {
-      // Quitar canal si está
-      this.selectedChannelsValue = this.selectedChannelsValue.filter(c => c !== columnName);
+      this.selectedChannelsValue = this.selectedChannelsValue.filter(c => c !== deviceChannelKey);
     }
     this.selectedChannels.setValue(this.selectedChannelsValue);
+    console.log('[onChannelCheckboxChange] selectedChannelsValue after:', this.selectedChannelsValue);
     this.loadData();
   }
 

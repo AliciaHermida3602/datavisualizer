@@ -14,6 +14,7 @@
   <div class="top-row">
     <div class="form-field">
       <label>Ensayo</label>
+
       <select class="form-select" [(ngModel)]="selectedEnsayoValue"
         [disabled]="loading" (change)="onEnsayoChange($event)">
         <option value>Select an ensayo</option>
@@ -23,13 +24,24 @@
       </select>
       <div class="spinner" *ngIf="loading">Loading...</div>
     </div>
-
   </div>
 
   <!-- Middle: Left channels, right chart -->
   <div class="middle-row">
     <div class="channels-panel">
-      <h3>Equipos disponibles</h3>
+      <div class="channels-panel-top">
+        <h3>Equipos disponibles</h3>
+        <button mat-icon-button
+          (click)="onClearSelection()"
+          [ngClass]="{'selected': selectedChannelsValue.length > 0}">
+          <mat-icon>cleaning_services</mat-icon>
+        </button>
+        <!-- todo revisar si onrefreshdata actualiza los canales o los datos -->
+        <button mat-icon-button (click)="onRefreshData()"
+          [disabled]="loadingData">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
       <div *ngIf="deviceNames.length > 0">
         <div *ngFor="let device of deviceNames">
           <div class="device-title">{{ device }}</div>
@@ -38,9 +50,9 @@
             <div *ngFor="let channel of channels.get(device)">
               <label>
                 <input type="checkbox"
-                  [value]="channel.column_name"
-                  [checked]="selectedChannelsValue.includes(channel.column_name)"
-                  (change)="onChannelCheckboxChange(channel.column_name, $event)"
+                  [value]="device + ':' + channel.column_name"
+                  [checked]="selectedChannelsValue.includes(device + ':' + channel.column_name)"
+                  (change)="onChannelCheckboxChange(device,channel.column_name, $event)"
                   [disabled]="loadingChannels" />
                 {{ channel.display_name }} ({{ channel.unit }})
               </label>
@@ -51,12 +63,7 @@
       <div class="spinner" *ngIf="loadingChannels">Loading channels...</div>
 
       <div class="channels-panel-bottom">
-        <button mat-raised-button class="clear-btn"
-          (click)="onClearSelection()"
-          [ngClass]="{'selected': selectedChannelsValue.length > 0}">
-          <mat-icon>clear</mat-icon>
-          <span>Clear Selection</span>
-        </button>
+
       </div>
     </div>
     <div class="chart-panel">

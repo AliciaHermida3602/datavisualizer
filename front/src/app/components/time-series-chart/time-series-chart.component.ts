@@ -60,15 +60,15 @@ export class TimeSeriesChartComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     // LOG: Mostrar los datos recibidos
-    if (changes['overviewData']) {
-      console.log('[TimeSeriesChart] overviewData:', this.overviewData);
-    }
-    if (changes['detailData']) {
-      console.log('[TimeSeriesChart] detailData:', this.detailData);
-    }
-    if (changes['selectedChannels']) {
-      console.log('[TimeSeriesChart] selectedChannels:', this.selectedChannels);
-    }
+    // if (changes['overviewData']) {
+    //   console.log('[TimeSeriesChart] overviewData:', this.overviewData);
+    // }
+    // if (changes['detailData']) {
+    //   console.log('[TimeSeriesChart] detailData:', this.detailData);
+    // }
+    // if (changes['selectedChannels']) {
+    //   console.log('[TimeSeriesChart] selectedChannels:', this.selectedChannels);
+    // }
     // Redibuja la gráfica de detalle si cambia detailData
     if (changes['detailData'] && !changes['detailData'].firstChange) {
       this.updateDetailChart();
