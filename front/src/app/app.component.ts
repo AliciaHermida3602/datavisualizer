@@ -30,7 +30,7 @@ export class AppComponent implements OnInit {
     allData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     return allData;
   }
-  title = 'Industrial Data Visualization';
+  title = 'Data Visualization';
 
   // Data
   ensayos: Ensayo[] = [];

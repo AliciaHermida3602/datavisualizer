@@ -1,5 +1,7 @@
 
 <mat-toolbar class="title-bar">
+  <img src="assets/logotipo_negativo_CTAG.png" alt="Logo Ctag"
+    class="logo" />
   <span>{{ title }}</span>
   <span class="spacer"></span>
   <button mat-icon-button (click)="onRefreshData()" [disabled]="loadingData">
@@ -21,13 +23,6 @@
       </select>
       <div class="spinner" *ngIf="loading">Loading...</div>
     </div>
-
-    <button mat-raised-button class="clear-btn"
-      (click)="onClearSelection()"
-      [ngClass]="{'selected': selectedChannelsValue.length > 0}">
-      <mat-icon>clear</mat-icon>
-      <span>Clear Selection</span>
-    </button>
 
   </div>
 
@@ -54,15 +49,18 @@
         </div>
       </div>
       <div class="spinner" *ngIf="loadingChannels">Loading channels...</div>
+
+      <div class="channels-panel-bottom">
+        <button mat-raised-button class="clear-btn"
+          (click)="onClearSelection()"
+          [ngClass]="{'selected': selectedChannelsValue.length > 0}">
+          <mat-icon>clear</mat-icon>
+          <span>Clear Selection</span>
+        </button>
+      </div>
     </div>
     <div class="chart-panel">
       <mat-card class="chart-card">
-        <mat-card-header>
-          <mat-card-title>Time Series Chart</mat-card-title>
-          <mat-card-subtitle *ngIf="selectedEnsayoValue">
-            Ensayo: {{ selectedEnsayoValue }}
-          </mat-card-subtitle>
-        </mat-card-header>
         <mat-card-content>
           <div *ngIf="loadingData" class="loading-container">
             <mat-spinner></mat-spinner>
@@ -119,8 +117,7 @@
         <strong>Sampling Rate:</strong> 1 every {{ dataMetadata.samplingRate }}
         points
       </div>
-      <div class="sampling-item"
-        *ngIf="currentTimeRange.start && currentTimeRange.end">
+      <div class="sampling-item">
         <strong>Time Range:</strong> {{ currentTimeRange.start | date:'short' }}
         - {{ currentTimeRange.end | date:'short' }}
       </div>
