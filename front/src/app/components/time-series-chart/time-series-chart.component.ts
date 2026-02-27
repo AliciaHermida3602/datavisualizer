@@ -103,12 +103,21 @@ export class TimeSeriesChartComponent implements OnChanges {
     });
     const yAxis: any[] = [];
     const units = Object.keys(unitGroups);
+    // Offset dinámico según el número de ejes y el ancho del gráfico
+    let chartWidth = 800; // Valor por defecto
+    const chartContainer = document.querySelector('.chart-container') as HTMLElement;
+    if (chartContainer) {
+      chartWidth = chartContainer.offsetWidth;
+    }
+    const maxOffset = Math.max(60, Math.floor(chartWidth * 0.4)); // 40% del ancho para ejes
+    const nPairs = Math.ceil(units.length / 2);
+    const yAxisSpacing = nPairs > 1 ? Math.floor(maxOffset / (nPairs - 1)) : 0;
     units.forEach((unit, index) => {
       yAxis.push({
         type: 'value',
         name: unit,
         position: index % 2 === 0 ? 'left' : 'right',
-        offset: Math.floor(index / 2) * 60,
+        offset: Math.floor(index / 2) * yAxisSpacing,
         axisLabel: { formatter: `{value} ${unit}` },
         axisLine: { show: true, lineStyle: { color: this.getColorByIndex(index) } }
       });
@@ -176,11 +185,20 @@ export class TimeSeriesChartComponent implements OnChanges {
     });
     const yAxis: any[] = [];
     const units = Object.keys(unitGroups);
+    // Offset dinámico según el número de ejes y el ancho del gráfico
+    let chartWidth = 800; // Valor por defecto
+    const chartContainer = document.querySelector('.chart-container') as HTMLElement;
+    if (chartContainer) {
+      chartWidth = chartContainer.offsetWidth;
+    }
+    const maxOffset = Math.max(60, Math.floor(chartWidth * 0.4)); // 40% del ancho para ejes
+    const nPairs = Math.ceil(units.length / 2);
+    const yAxisSpacing = nPairs > 1 ? Math.floor(maxOffset / (nPairs - 1)) : 0;
     units.forEach((unit, index) => {
       yAxis.push({
         type: 'value',
         position: index % 2 === 0 ? 'left' : 'right',
-        offset: Math.floor(index / 2) * 60,
+        offset: Math.floor(index / 2) * yAxisSpacing,
         axisLabel: { show: false },
         axisLine: { show: false },
         splitLine: { show: false }
