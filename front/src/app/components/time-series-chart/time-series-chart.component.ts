@@ -60,15 +60,16 @@ export class TimeSeriesChartComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     // LOG: Mostrar los datos recibidos
-    // if (changes['overviewData']) {
-    //   console.log('[TimeSeriesChart] overviewData:', this.overviewData);
-    // }
-    // if (changes['detailData']) {
-    //   console.log('[TimeSeriesChart] detailData:', this.detailData);
-    // }
-    // if (changes['selectedChannels']) {
-    //   console.log('[TimeSeriesChart] selectedChannels:', this.selectedChannels);
-    // }
+    if (changes['overviewData']) {
+      console.log('[TimeSeriesChart] overviewData:', this.overviewData);
+      console.log('[TimeSeriesChart]selectedChannels', this.selectedChannels);
+    }
+    if (changes['detailData']) {
+      console.log('[TimeSeriesChart] detailData:', this.detailData);
+    }
+    if (changes['selectedChannels']) {
+      console.log('[TimeSeriesChart] selectedChannels:', this.selectedChannels);
+    }
     // Redibuja la gráfica de detalle si cambia detailData
     if (changes['detailData'] && !changes['detailData'].firstChange) {
       this.updateDetailChart();
@@ -88,21 +89,17 @@ export class TimeSeriesChartComponent implements OnChanges {
     }
     // Agrupa canales por unidad para ejes Y dinámicos
     const unitGroups: { [unit: string]: Channel[] } = {};
-    this.selectedChannels.forEach(channelName => {
-      // Buscar el canal por nombre en todas las listas de devices
-      let foundChannel: Channel | null = null;
-      for (const channelArr of Array.from(this.channels.values())) {
-        const match = channelArr.find(ch => ch.column_name === channelName);
-        if (match) {
-          foundChannel = match;
-          break;
-        }
-      }
+    this.selectedChannels.forEach(channelKey => {
+      // channelKey es "device:channel"
+      const [device, channelName] = channelKey.split(":");
+      const channelArr = this.channels.get(device) || [];
+      const foundChannel = channelArr.find(ch => ch.column_name === channelName) || null;
       if (foundChannel) {
         const unit = foundChannel.unit || 'default';
         if (!unitGroups[unit]) unitGroups[unit] = [];
         unitGroups[unit].push(foundChannel);
       }
+      console.log('match', foundChannel);
     });
     const yAxis: any[] = [];
     const units = Object.keys(unitGroups);
@@ -118,15 +115,10 @@ export class TimeSeriesChartComponent implements OnChanges {
     });
     const series: any[] = [];
     this.selectedChannels.forEach((channelName, index) => {
-      // Buscar el canal por nombre en todas las listas de devices
-      let foundChannel: Channel | null = null;
-      for (const channelArr of Array.from(this.channels.values())) {
-        const match = channelArr.find(ch => ch.column_name === channelName);
-        if (match) {
-          foundChannel = match;
-          break;
-        }
-      }
+      // channelName es "device:channel"
+      const [device, channel] = channelName.split(":");
+      const channelArr = this.channels.get(device) || [];
+      const foundChannel = channelArr.find(ch => ch.column_name === channel) || null;
       if (!foundChannel) return;
       const yAxisIndex = units.indexOf(foundChannel.unit || 'default');
       const detailSeriesData = this.detailData.map(point => [new Date(point.timestamp).getTime(), point[channelName]]);
@@ -144,17 +136,12 @@ export class TimeSeriesChartComponent implements OnChanges {
     this.detailChartOption = {
       title: { text: this.title, left: 'center' },
       legend: {
-        data: this.selectedChannels.map((channelName, index) => {
-          // Buscar el canal por nombre en todas las listas de devices
-          let foundChannel: Channel | null = null;
-          for (const channelArr of Array.from(this.channels.values())) {
-            const match = channelArr.find(ch => ch.column_name === channelName);
-            if (match) {
-              foundChannel = match;
-              break;
-            }
-          }
-          return foundChannel ? foundChannel.display_name : channelName;
+        data: this.selectedChannels.map((channelKey, index) => {
+          // channelKey es "device:channel"
+          const [device, channelName] = channelKey.split(":");
+          const channelArr = this.channels.get(device) || [];
+          const foundChannel = channelArr.find(ch => ch.column_name === channelName) || null;
+          return foundChannel ? foundChannel.display_name : channelKey;
         }),
         top: 40,
         left: 'center',
@@ -176,16 +163,11 @@ export class TimeSeriesChartComponent implements OnChanges {
     }
     // Configuración de ejes igual que la superior pero ocultos
     const unitGroups: { [unit: string]: Channel[] } = {};
-    this.selectedChannels.forEach(channelName => {
-      // Buscar el canal por nombre en todas las listas de devices
-      let foundChannel: Channel | null = null;
-      for (const channelArr of Array.from(this.channels.values())) {
-        const match = channelArr.find(ch => ch.column_name === channelName);
-        if (match) {
-          foundChannel = match;
-          break;
-        }
-      }
+    this.selectedChannels.forEach(channelKey => {
+      // channelKey es "device:channel"
+      const [device, channelName] = channelKey.split(":");
+      const channelArr = this.channels.get(device) || [];
+      const foundChannel = channelArr.find(ch => ch.column_name === channelName) || null;
       if (foundChannel) {
         const unit = foundChannel.unit || 'default';
         if (!unitGroups[unit]) unitGroups[unit] = [];
@@ -206,15 +188,10 @@ export class TimeSeriesChartComponent implements OnChanges {
     });
     const series: any[] = [];
     this.selectedChannels.forEach((channelName, index) => {
-      // Buscar el canal por nombre en todas las listas de devices
-      let foundChannel: Channel | null = null;
-      for (const channelArr of Array.from(this.channels.values())) {
-        const match = channelArr.find(ch => ch.column_name === channelName);
-        if (match) {
-          foundChannel = match;
-          break;
-        }
-      }
+      // channelName es "device:channel"
+      const [device, channel] = channelName.split(":");
+      const channelArr = this.channels.get(device) || [];
+      const foundChannel = channelArr.find(ch => ch.column_name === channel) || null;
       if (!foundChannel) return;
       const yAxisIndex = units.indexOf(foundChannel.unit || 'default');
       const overviewSeriesData = this.overviewData.map(point => [new Date(point.timestamp).getTime(), point[channelName]]);
